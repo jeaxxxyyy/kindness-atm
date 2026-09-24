@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#003b91">
+  <meta name="description" content="Interactive Kindness ATM kiosk prototype for Mater Dei College.">
+  <title>Kindness ATM</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23003b91'/%3E%3Cpath d='M32 48S12 37 12 23c0-8 10-12 20-3 10-9 20-5 20 3 0 14-20 25-20 25Z' fill='white'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --blue: #003b91;
+      --blue-2: #0052b8;
+      --navy: #001c55;
+      --ink: #10234c;
+      --silver: #dfe5ee;
+      --line: #c8d3e3;
+      --green: #108043;
+      --gold: #d97706;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 50% 8%, #dbe7fa 0, #9eb3d0 36%, #546c8b 100%);
+      padding: 28px 14px;
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    
+    /* Kiosk Main Shell */
+    .atm {
+      width: min(100%, 940px);
+      margin: auto;
+      border: 1px solid #8090a8;
+      border-radius: 42px 42px 28px 28px;
+      background: linear-gradient(100deg, #abb5c3 0, #f7f9fc 9%, #e9edf3 52%, #bbc5d2 93%, #8f9aaa 100%);
+      box-shadow: 0 30px 70px #10233e78, inset 0 1px 0 white;
+      overflow: hidden;
+    }
+    .marquee {
+      margin: 20px 28px 0;
+      border: 8px solid var(--blue);
+      border-radius: 23px 23px 10px 10px;
+      background: white;
+      box-shadow: inset 0 0 20px #c5d8f3, 0 5px 0 #8090a8;
+      padding: 15px;
+      text-align: center;
+    }
+    .marquee h1 {
+      margin: 0;
+      color: var(--blue);
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
+      line-height: .95;
+      letter-spacing: -.04em;
+      font-weight: 900;
+    }
+    .marquee p {
+      margin: 8px 0 0;
+      color: var(--blue);
+      font-weight: 800;
+      font-size: clamp(.88rem, 2vw, 1.15rem);
+    }
+
+    /* Console Layout */
+    .console {
+      margin: 22px 28px 0;
+      padding: 24px;
+      border-top: 7px solid var(--blue);
+      border-bottom: 7px solid var(--blue);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 22px;
+      background: linear-gradient(100deg, #cbd3de, #f8f9fb 12%, #e2e7ef 85%, #aeb8c6);
+    }
+    .screen-shell {
+      border: 13px solid #222d40;
+      border-radius: 16px;
+      padding: 5px;
+      background: #020817;
+      box-shadow: inset 0 0 0 2px #536173, 0 7px 14px #21304d45;
+    }
+    .screen {
+      min-height: 490px;
+      border: 2px solid #456798;
+      background: linear-gradient(#eff5ff, #fff);
+      padding: clamp(20px, 4vw, 36px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Steps and Screen Visibility */
+    .step {
+      display: none;
+      width: 100%;
+      animation: appear .25s ease-out;
+    }
+    .step.active { display: block; }
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .screen-mark {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--blue);
+      color: white;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      margin-bottom: 15px;
+      border-radius: 3px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      color: var(--blue);
+      font-size: clamp(1.5rem, 3.8vw, 2.2rem);
+      line-height: 1.1;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+    p {
+      line-height: 1.5;
+      color: #465878;
+      font-size: 1rem;
+    }
+    .purpose-text {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin: 20px 0 25px;
+    }
+
+    /* Inputs and Forms */
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: 800;
+      color: #203763;
+      font-size: .9rem;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1.5px solid #b6c7df;
+      border-radius: 6px;
+      background: white;
+      color: #15274b;
+      outline: none;
+      font-size: 1rem;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px #0052b81c;
+    }
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .code-input {
+      font-size: 1.6rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-align: center;
+      font-weight: 800;
+      color: var(--blue);
+      max-width: 280px;
+      margin: 15px auto;
+      display: block;
+      border: 2px solid var(--blue);
+    }
+
+    /* Buttons Layout */
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 25px;
+      align-items: center;
+    }
+    .btns-center {
+      justify-content: center;
+    }
+    .btns-side-by-side {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 14px 22px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .035em;
+      transition: background .15s, transform .1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .primary { background: var(--blue); color: white; }
+    .primary:hover { background: var(--blue-2); }
+    .secondary { background: #dbe5f3; color: var(--navy); }
+    .secondary:hover { background: #c2d4ec; }
+
+    /* 2x2 ID Card Screen Layout */
+    .id-card-layout {
+      display: flex;
+      gap: 18px;
+      background: #ffffff;
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 15px;
+      box-shadow: 0 4px 12px #10234c0f;
+      align-items: center;
+    }
+    .id-box {
+      width: 110px;
+      height: 110px;
+      min-width: 110px;
+      background: #e1e8f2;
+      border: 2px dashed #8ba2c4;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #5d7499;
+      font-weight: 700;
+      font-size: .82rem;
+      text-align: center;
+    }
+    .id-box svg {
+      width: 42px;
+      height: 42px;
+      fill: #8ba2c4;
+      margin-bottom: 4px;
+    }
+    .id-details {
+      flex: 1;
+      text-align: left;
+    }
+    .id-details p {
+      margin: 4px 0;
+      font-size: .95rem;
+      color: #203763;
+    }
+    .id-details strong {
+      color: var(--navy);
+    }
+    .code-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 10px;
+      background: #eef4ff;
+      border: 1px solid var(--blue);
+      color: var(--blue);
+      font-weight: 900;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 1.1rem;
+    }
+
+    /* Icon Displays */
+    .center-icon {
+      font-size: 4rem;
+      text-align: center;
+      margin: 15px 0;
+      animation: bounce 1.2s infinite alternate;
+    }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+
+    /* Randomizer Wheel Container */
+    .randomizer-box {
+      background: white;
+      border: 3px solid var(--blue);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      margin: 18px 0;
+      box-shadow: inset 0 0 15px #003b911a;
+    }
+    .slot-display {
+      font-size: 4.5rem;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    .slot-label {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--blue);
+      min-height: 1.8em;
+    }
+
+    /* Side Panel Branding & Logo */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .crest-logo {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0, 59, 145, 0.18));
+      background: white;
+      border-radius: 50%;
+      padding: 4px;
+      border: 3px solid var(--blue);
+    }
+    .school {
+      color: var(--blue);
+      font-weight: 900;
+      font-size: 1.35rem;
+      line-height: 1.04;
+    }
+    .kindness-card {
+      width: 100%;
+      background: var(--blue);
+      color: white;
+      padding: 18px 14px;
+      border-radius: 6px;
+      box-shadow: 0 4px 0 #001b4e;
+    }
+    .kindness-card .heart {
+      font-size: 2.1rem;
+      line-height: 1;
+    }
+    .kindness-card strong {
+      display: block;
+      margin-top: 8px;
+    }
+
+    /* Lower Section & Chute */
+    .rewards {
+      padding: 17px 30px 14px;
+      text-align: center;
+      color: var(--blue);
+    }
+    .rewards h3 {
+      font-size: .82rem;
+      margin: 0 0 13px;
+      letter-spacing: .06em;
+    }
+    .reward-list {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+    .supply {
+      font-size: 1.55rem;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+    .supply span {
+      display: block;
+      font-size: .65rem;
+      font-weight: 800;
+      margin-top: 5px;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .chute {
+      margin: 0 34px 30px;
+      border: 12px solid var(--blue);
+      border-radius: 15px;
+      background: linear-gradient(#001342, #002e83 35%, #001038);
+      min-height: 120px;
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 15px 25px #0008, 0 5px 0 #8d9aab;
+      color: white;
+      text-align: center;
+      padding: 18px;
+      position: relative;
+    }
+    .chute strong {
+      font-size: 1.1rem;
+      letter-spacing: .055em;
+    }
+    .dispensed-item {
+      font-size: 2.8rem;
+      animation: drop 0.5s ease-out forwards;
+    }
+    @keyframes drop {
+      from { transform: translateY(-30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .base {
+      height: 31px;
+      background: var(--blue);
+      clip-path: ellipse(52% 100% at 50% 100%);
+    }
+
+    /* Timer Banner */
+    .timer-badge {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #627799;
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 10px 6px; }
+      .atm { border-radius: 24px; }
+      .marquee { margin: 13px 13px 0; border-width: 6px; }
+      .console { margin: 16px 13px 0; padding: 14px; grid-template-columns: 1fr; }
+      .screen { min-height: 520px; }
+      .side-panel { display: grid; grid-template-columns: 80px 1fr; align-items: center; text-align: left; }
+      .crest-logo { grid-row: 1/3; width: 70px; height: 70px; }
+      .school { text-align: left; }
+      .kindness-card { grid-column: 2; text-align: left; }
+      .reward-list { grid-template-columns: repeat(3, 1fr); row-gap: 12px; }
+      .chute { margin: 0 18px 20px; }
+      .rewards { padding-inline: 18px; }
+      .id-card-layout { flex-direction: column; text-align: center; }
+      .id-details { text-align: center; }
+      .btns-side-by-side { flex-direction: column; width: 100%; }
+      .btns-side-by-side .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="atm" aria-label="Kindness ATM interactive prototype">
+    <!-- Header Marquee -->
+    <header class="marquee">
+      <h1>WELCOME TO KINDNESS ATM</h1>
+      <p>Where Kindness Pays Forward</p>
+    </header>
+
+    <!-- Main Interactive Console -->
+    <section class="console">
+      <div class="screen-shell">
+        <div class="screen" aria-live="polite">
+
+          <!-- 0. MAIN SCREEN -->
+          <section class="step active" id="main-screen" style="text-align:center">
+            <span class="screen-mark">MAIN MENU</span>
+            <h2>WELCOME TO KINDNESS ATM</h2>
+            <p>Where Kindness Pays Forward</p>
+            <div class="purpose-text">What's your purpose?</div>
+            <div class="btns btns-side-by-side">
+              <button class="btn primary" onclick="go('record-act-screen')">RECOGNIZE KINDNESS</button>
+              <button class="btn primary" style="background:#0052b8" onclick="go('receive-code-screen')">RECEIVE KINDNESS</button>
+            </div>
+          </section>
+
+          <!-- RECOGNIZE KINDNESS FLOW -->
+
+          <!-- 1. RECORD THE KIND ACT -->
+          <section class="step" id="record-act-screen">
+            <span class="screen-mark">RECOGNIZE KINDNESS</span>
+            <h2>RECORD THE KIND ACT</h2>
+            
+            <label for="giver-name">What is your name?(Full Name)</label>
+            <input id="giver-name" autocomplete="off" placeholder="Enter your full name">
+
+            <label for="recipient-name">Who was kind to you? (Recipient's Full Name)</label>
+            <input id="recipient-name" autocomplete="off" placeholder="Enter recipient's full name">
+
+            <label for="kind-act-desc">What did he/she do?(Kind Act)</label>
+            <textarea id="kind-act-desc" placeholder="Example: Helped carry books or gave words of encouragement."></textarea>
+
+            <div class="btns">
+              <button class="btn secondary" onclick="go('main-screen')">BACK</button>
+              <button class="btn primary" onclick="processRecordAct()">CONTINUE</button>
+            </div>
+          </section>
+
+          <!-- 2. KIND DETAILS SCREEN -->
+          <section class="step" id="kind-details-screen">
+            <span class="screen-mark">RECOGNIZE KINDNESS</span>
+            <h2>KIND DETAILS</h2>
+            <p style="margin-bottom:8px">The person you are referring to is ....</p>
+
+            <div class="id-card-layout">
+              <div class="id-box">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                
+              </div>
+              <div class="id-details">
+                <p><strong>Name:</strong> <span id="disp-recipient-name">Juan Cruz</span></p>
+                <p><strong>Identification No.:</strong> <span id="disp-id-no">88421</span></p>
+                <p><strong>Contact No.:</strong> <span id="disp-contact-no">+63 917 555 0192</span></p>
+                <p><strong>Kindness Code:</strong> <span class="code-badge" id="disp-generated-code">KG2366</span></p>
+              </div>
+            </div>
+
+            <div class="btns">
+              <button class="btn secondary" onclick="go('record-act-screen')">BACK</button>
+              <button class="btn primary" onclick="go('kindness-recognized-screen')">CONTINUE</button>
+            </div>
+          </section>
+
+          <!-- 3. KINDNESS RECOGNIZED SCREEN (3s Auto Redirect) -->
+          <section class="step" id="kindness-recognized-screen" style="text-align:center">
+            <span class="screen-mark">SUCCESS</span>
+            <h2>KINDNESS RECOGNIZED</h2>
+            
+            <div class="center-icon">🔔</div>
+            <p style="font-weight:800; color:var(--blue); font-size:1.1rem; margin-top:0">Claim Message Sent</p>
+
+            <p style="font-size:1.15rem; color:var(--navy); font-weight:700; max-width:480px; margin:20px auto">
+              THANK YOU FOR RECOGNIZING ACTS OF KINDNESS AND MAY YOU CONTINUE TO DO IT 😊
+            </p>
+
+            <div class="timer-badge">Redirecting to Main Screen in <span id="recognize-countdown">3</span> seconds...</div>
+          </section>
+
+
+          <!-- RECEIVE KINDNESS FLOW -->
+
+          <!-- 1. INPUT KINDNESS CODE -->
+          <section class="step" id="receive-code-screen">
+            <span class="screen-mark">RECEIVE KINDNESS</span>
+            <h2 style="font-size: clamp(1.3rem, 3.5vw, 1.8rem);">GREAT JOB FOR DOING KINDNESS!</h2>
+            <p style="font-weight:700; color:var(--blue)">Someone has recognized your kindness 😊</p>
+
+            <label style="text-align:center; font-size:1rem; margin-top:20px">PLEASE INPUT YOUR KINDNESS CODE</label>
+            <input id="input-kindness-code" class="code-input" maxlength="6" placeholder="KG2366" autocomplete="off">
+
+            <div class="btns btns-center">
+              <button class="btn secondary" onclick="go('main-screen')">BACK</button>
+              <button class="btn primary" onclick="submitKindnessCode()">SUBMIT</button>
+            </div>
+          </section>
+
+          <!-- 2. RANDOMIZER SCREEN -->
+          <section class="step" id="randomizer-screen" style="text-align:center">
+            <span class="screen-mark">REWARD SELECTOR</span>
+            <h2>KINDNESS REWARD RANDOMIZER</h2>
+
+            <div class="randomizer-box">
+              <div class="slot-display" id="slot-emoji">❓</div>
+              <div class="slot-label" id="slot-text">Spinning for your reward...</div>
+            </div>
+
+            <div class="btns btns-center">
+              <button class="btn secondary" id="rand-back-btn" onclick="go('receive-code-screen')">BACK</button>
+              <button class="btn primary" id="rand-continue-btn" style="display:none" onclick="go('dispense-screen')">CONTINUE</button>
+            </div>
+          </section>
+
+          <!-- 3. DISPENSE SCREEN -->
+          <section class="step" id="dispense-screen" style="text-align:center">
+            <span class="screen-mark">DISPENSER</span>
+            <h2>DISPENSING REWARD</h2>
+
+            <p style="font-size:1.2rem; font-weight:800; color:var(--navy); margin:30px 0">
+              KINDLY GET YOUR REWARD OF KINDNESS ON THE DISPENSE BELOW.
+            </p>
+
+            <div class="btns btns-center">
+              <button class="btn secondary" onclick="go('randomizer-screen')">BACK</button>
+              <button class="btn primary" style="padding: 16px 36px; font-size: 1.1rem; background:var(--green)" onclick="triggerGotIt()">GOT IT!</button>
+            </div>
+          </section>
+
+          <!-- 4. FINAL THANK YOU SCREEN (3s Auto Redirect) -->
+          <section class="step" id="final-thankyou-screen" style="text-align:center">
+            <span class="screen-mark">THANK YOU</span>
+            <h2>KINDNESS PAYS FORWARD</h2>
+
+            <div class="center-icon">❤️</div>
+
+            <p style="font-size:1.2rem; color:var(--navy); font-weight:800; max-width:480px; margin:20px auto">
+              THANK YOU FOR DOING ACTS OF KINDNESS AND MAY YOU CONTINUE DO IT ❤️
+            </p>
+
+            <div class="timer-badge">Returning to Main Screen in <span id="final-countdown">3</span> seconds...</div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- Kiosk Side Branding -->
+      <aside class="side-panel" aria-label="School and project identity">
+        <img src="mdc logo.png" alt="Mater Dei College Seal" class="crest-logo" onerror="this.src='https://placehold.co/100x100/003b91/ffffff?text=MDC'">
+        <div class="school">MATER DEI<br>COLLEGE</div>
+        <div class="kindness-card">
+          <div class="heart">♡</div>
+          <strong>NO MONEY.<br>JUST KINDNESS.</strong>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Available Kindness Supplies -->
+    <section class="rewards">
+      <h3>KINDNESS REWARDS</h3>
+      <div class="reward-list">
+        <div class="supply">🖊️<span>Ballpen</span></div>
+        <div class="supply">📓<span>Notebook</span></div>
+        <div class="supply">📄<span>Paper</span></div>
+        <div class="supply">📏<span>Ruler</span></div>
+        <div class="supply">✏️<span>Pencil</span></div>
+        <div class="supply">🗒️<span>Sticky notes</span></div>
+      </div>
+    </section>
+
+    <!-- Bottom Dispenser Chute -->
+    <section class="chute">
+      <div id="chute-content">
+        <strong>GET YOUR KINDNESS REWARD HERE</strong>
+      </div>
+    </section>
+
+    <div class="base"></div>
+  </main>
+
+  <script>
+    // Reward Options Definition
+    const REWARDS = [
+      { emoji: '📓', name: 'Notebook', article: 'a notebook' },
+      { emoji: '🖊️', name: 'Ballpen', article: 'a ballpen' },
+      { emoji: '✏️', name: 'Pencil', article: 'a pencil' },
+      { emoji: '📄', name: 'Paper', article: 'a paper pad' },
+      { emoji: '📏', name: 'Ruler', article: 'a ruler' },
+      { emoji: '🗒️', name: 'Sticky Notes', article: 'sticky notes' }
+    ];
+
+    let currentSelectedReward = null;
+    let recognizeTimer = null;
+    let finalTimer = null;
+
+    // Helper: Screen Navigation
+    function go(screenId) {
+      // Clear timers when navigating manually
+      if (recognizeTimer) clearInterval(recognizeTimer);
+      if (finalTimer) clearInterval(finalTimer);
+
+      document.querySelectorAll('.step').forEach(step => {
+        step.classList.remove('active');
+      });
+
+      const targetScreen = document.getElementById(screenId);
+      if (targetScreen) {
+        targetScreen.classList.add('active');
+      }
+
+      // Handle specific screen enter logic
+      if (screenId === 'kindness-recognized-screen') {
+        startRecognizeCountdown();
+      } else if (screenId === 'randomizer-screen') {
+        startRandomizer();
+      } else if (screenId === 'final-thankyou-screen') {
+        startFinalCountdown();
+      } else if (screenId === 'main-screen') {
+        resetChute();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Helper: Code Generator (2 Uppercase letters + 4 Digits)
+    function generateKindnessCode() {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const char1 = letters.charAt(Math.floor(Math.random() * letters.length));
+      const char2 = letters.charAt(Math.floor(Math.random() * letters.length));
+      const numbers = Math.floor(1000 + Math.random() * 9000);
+      return `${char1}${char2}${numbers}`;
+    }
+
+    // Flow 1: Process Record Act Form
+    function processRecordAct() {
+      const recipient = document.getElementById('recipient-name').value.trim() || 'Juan Dela Cruz';
+      
+      // Update Kind Details Screen
+      document.getElementById('disp-recipient-name').textContent = recipient;
+      document.getElementById('disp-id-no').textContent = `${Math.floor(10000 + Math.random() * 90000)}`;
+      document.getElementById('disp-contact-no').textContent = `+63 9${Math.floor(10 + Math.random() * 89)} ${Math.floor(100 + Math.random() * 899)} ${Math.floor(1000 + Math.random() * 8999)}`;
+      document.getElementById('disp-generated-code').textContent = generateKindnessCode();
+
+      go('kind-details-screen');
+    }
+
+    // 3-Second Timer for Kindness Recognized Screen
+    function startRecognizeCountdown() {
+      let count = 3;
+      const countDisplay = document.getElementById('recognize-countdown');
+      countDisplay.textContent = count;
+
+      recognizeTimer = setInterval(() => {
+        count--;
+        countDisplay.textContent = count;
+        if (count <= 0) {
+          clearInterval(recognizeTimer);
+          go('main-screen');
+        }
+      }, 1000);
+    }
+
+    // Flow 2: Submit Kindness Code
+    function submitKindnessCode() {
+      const input = document.getElementById('input-kindness-code').value.trim();
+      if (!input) {
+        alert('Please enter your 6-character Kindness Code.');
+        return;
+      }
+      go('randomizer-screen');
+    }
+
+    // Randomizer Slot Animation
+    function startRandomizer() {
+      const emojiSlot = document.getElementById('slot-emoji');
+      const textSlot = document.getElementById('slot-text');
+      const backBtn = document.getElementById('rand-back-btn');
+      const continueBtn = document.getElementById('rand-continue-btn');
+
+      backBtn.style.display = 'inline-block';
+      continueBtn.style.display = 'none';
+      textSlot.textContent = 'Spinning for your reward...';
+
+      let counter = 0;
+      const totalSpins = 20;
+      const interval = setInterval(() => {
+        const randIndex = Math.floor(Math.random() * REWARDS.length);
+        emojiSlot.textContent = REWARDS[randIndex].emoji;
+        counter++;
+
+        if (counter >= totalSpins) {
+          clearInterval(interval);
+          // Pick final reward
+          currentSelectedReward = REWARDS[Math.floor(Math.random() * REWARDS.length)];
+          emojiSlot.textContent = currentSelectedReward.emoji;
+          textSlot.textContent = `Because you are kind, you will receive ${currentSelectedReward.article}.`;
+          
+          continueBtn.style.display = 'inline-block';
+        }
+      }, 100);
+    }
+
+    // Dispense Chute Item Trigger
+    function triggerGotIt() {
+      const chute = document.getElementById('chute-content');
+      if (currentSelectedReward) {
+        chute.innerHTML = `<div class="dispensed-item">${currentSelectedReward.emoji}</div><strong>DISPENSED: ${currentSelectedReward.name.toUpperCase()}</strong>`;
+      }
+      go('final-thankyou-screen');
+    }
+
+    function resetChute() {
+      document.getElementById('chute-content').innerHTML = `<strong>GET YOUR KINDNESS REWARD HERE</strong>`;
+    }
+
+    // 3-Second Timer for Final Screen
+    function startFinalCountdown() {
+      let count = 3;
+      const countDisplay = document.getElementById('final-countdown');
+      countDisplay.textContent = count;
+
+      finalTimer = setInterval(() => {
+        count--;
+        countDisplay.textContent = count;
+        if (count <= 0) {
+          clearInterval(finalTimer);
+          go('main-screen');
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
